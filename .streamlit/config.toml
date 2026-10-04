@@ -1,0 +1,11 @@
+[theme]
+# Deep charcoal background (SaaS standard)
+backgroundColor = "#09090b"
+# Slightly lighter sidebar for contrast
+secondaryBackgroundColor = "#18181b"
+# Crisp off-white text
+textColor = "#f4f4f5"
+# Indigo/Purple accent for buttons and highlights
+primaryColor = "#6366f1"
+# Modern sans-serif font
+font = "sans serif"
