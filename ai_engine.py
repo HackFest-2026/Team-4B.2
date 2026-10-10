@@ -13,19 +13,29 @@ if not api_key:
 client = genai.Client(api_key=api_key)
 
 def generate_prd(feature_idea):
-    """Takes a simple feature idea and returns a structured PRD."""
+    """Takes a simple feature idea and returns a clean, structured PRD."""
     prompt = f"""
-    Act as an Expert Product Manager.
-    Write a clear, professional, and structured Product Requirements Document (PRD) for the following feature:
+    Act as a Principal Product Manager at a top tech company.
+    Write a clear, detailed, and accurate Product Requirements Document (PRD) for the following feature.
+    Avoid all fluff. Do NOT stack triple asterisks (***). Use standard, clean Markdown formatting.
 
-    Feature: {feature_idea}
+    Feature Brief: {feature_idea}
 
-    You MUST output the PRD in Markdown format with these exact headings:
+    Use exactly these headings:
     ## 1. Overview
+    Write a concise 2-sentence executive summary.
+
     ## 2. Problem Statement
+    Define the exact user pain point clearly.
+
     ## 3. Goals & Success Metrics
+    List 1 business goal and 3 specific KPIs.
+
     ## 4. User Stories
-    ## 5. Technical Requirements
+    Provide 3 realistic agile user stories in standard format ("As a [user], I want to [action] so that [benefit]").
+
+    ## 5. Technical & UX Requirements
+    List specific technical constraints, edge cases, and UX rules using clean bullet points.
     """
     try:
         response = client.models.generate_content(
@@ -35,19 +45,25 @@ def generate_prd(feature_idea):
         return response.text
     except Exception as e:
         return f"Error connecting to AI: {e}"
+
 
 def summarize_feedback(feedback_text):
     """Analyzes customer reviews and extracts key themes using Gemini."""
     prompt = f"""
-    Act as an Expert Product Manager. 
-    Analyze the following customer feedback and provide a structured summary.
+    Act as an Executive Product Manager. 
+    Analyze the following customer feedback and provide a clear, zero-fluff summary. Use clean Markdown formatting.
     
     Feedback: {feedback_text}
     
-    Format the output in Markdown with these exact headings:
-    ## 1. Overall Sentiment (Positive, Neutral, Negative)
-    ## 2. Top 3 Themes or Requests
-    ## 3. Recommended PM Action
+    Use exactly these headings:
+    ## 1. Overall Sentiment
+    Declare sentiment (Positive, Neutral, Negative) with 1 sentence explaining the driver.
+
+    ## 2. Top 3 Themes
+    List the top 3 patterns using bold bullet points.
+
+    ## 3. Recommended PM Action Plan
+    Provide 3 concrete engineering or product steps to take immediately.
     """
     try:
         response = client.models.generate_content(
@@ -57,6 +73,7 @@ def summarize_feedback(feedback_text):
         return response.text
     except Exception as e:
         return f"Error connecting to AI: {e}"
+
 
 def explain_rice_score(feature_name, reach, impact, confidence, effort, score):
     """Provides a PM consulting breakdown of what the computed RICE score means."""
@@ -72,13 +89,13 @@ def explain_rice_score(feature_name, reach, impact, confidence, effort, score):
 
     Provide a concise strategic breakdown with these headings:
     ## 1. Executive Verdict
-    (Explain what a score of {score} means for release planning in 2 sentences)
+    Explain what a score of {score} means for release planning in 2 sentences.
 
     ## 2. Risk & Value Trade-Off Analysis
-    (Explain how the Effort of {effort} person-months balances against the {confidence}% Confidence level)
+    Explain how Effort ({effort} person-months) balances against Confidence ({confidence}%).
 
     ## 3. Optimization Recommendation
-    (Suggest 1 practical way to lower effort or increase confidence)
+    Suggest 1 practical way to lower effort or increase confidence.
     """
     try:
         response = client.models.generate_content(
@@ -88,6 +105,7 @@ def explain_rice_score(feature_name, reach, impact, confidence, effort, score):
         return response.text
     except Exception as e:
         return f"Error connecting to AI: {e}"
+
 
 def calculate_rice_score(reach, impact, confidence, effort):
     """Calculates RICE priority score using pure math."""

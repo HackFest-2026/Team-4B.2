@@ -2,7 +2,7 @@ import streamlit as st
 import time
 import ai_engine
 
-# 1. Page Configuration (Configured to keep sidebar expanded and menu controls visible)
+# 1. Page Configuration
 st.set_page_config(
     page_title="AI PM Copilot | Enterprise Dashboard", 
     page_icon="🚀", 
@@ -17,8 +17,6 @@ st.markdown("""
         background-color: #09090b;
         color: #f4f4f5;
     }
-    
-    /* Top Banner Bar */
     .top-header {
         background: linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
         border: 1px solid rgba(168, 85, 247, 0.3);
@@ -26,8 +24,6 @@ st.markdown("""
         border-radius: 12px;
         margin-bottom: 24px;
     }
-    
-    /* Stat Cards */
     .stat-card {
         background-color: #18181b;
         border: 1px solid #27272a;
@@ -46,8 +42,6 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
-
-    /* Buttons */
     .stButton > button {
         border-radius: 8px;
         background-color: #18181b;
@@ -64,13 +58,10 @@ st.markdown("""
         background-color: #27272a;
         color: #ffffff;
     }
-    
-    /* Clean up footer while preserving header menu controls */
     footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# Helper: Simulated Typing Generator
 def stream_text_with_cursor(text):
     for word in text.split(" "):
         yield word + " "
@@ -87,11 +78,11 @@ st.markdown("""
 # 4-Column Top KPI Telemetry
 m1, m2, m3, m4 = st.columns(4)
 with m1:
-    st.markdown('<div class="stat-card"><div class="stat-number">1,240+</div><div class="stat-label">PRDs Generated</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-number">-60%</div><div class="stat-label">Requirement Cycle Time</div></div>', unsafe_allow_html=True)
 with m2:
-    st.markdown('<div class="stat-card"><div class="stat-number">98.4%</div><div class="stat-label">Time Saved / Doc</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-number">92%</div><div class="stat-label">Prioritization Accuracy</div></div>', unsafe_allow_html=True)
 with m3:
-    st.markdown('<div class="stat-card"><div class="stat-number">4.2k</div><div class="stat-label">Reviews Scanned</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-number">-40%</div><div class="stat-label">Spec Rework Rate</div></div>', unsafe_allow_html=True)
 with m4:
     st.markdown('<div class="stat-card"><div class="stat-number">Gemini 3.5 Lite</div><div class="stat-label">Active Neural Model</div></div>', unsafe_allow_html=True)
 
@@ -104,7 +95,6 @@ menu_selection = st.sidebar.radio(
     ["📝 PRD Studio", "📊 RICE Prioritization Engine", "💬 Customer Feedback Hub"]
 )
 
-# Workspace State Routing
 if "PRD Studio" in menu_selection:
     app_mode = "PRD"
 elif "RICE Prioritization Engine" in menu_selection:
@@ -123,38 +113,60 @@ if app_mode == "PRD":
     
     with col_input:
         st.markdown("### 1. Configuration & Brief")
-        
         st.markdown("**Quick Preset Briefs:**")
         preset_cols = st.columns(2)
-        preset_prompt = ""
+        
+        if "prd_brief_text" not in st.session_state:
+            st.session_state.prd_brief_text = ""
+            
         if preset_cols[0].button("⚡ Google SSO"):
-            preset_prompt = "One-click OAuth Google Sign-In button for mobile e-commerce checkout"
+            st.session_state.prd_brief_text = "One-click OAuth Google Sign-In button for mobile e-commerce checkout"
         if preset_cols[1].button("🌙 Dark Mode"):
-            preset_prompt = "System-wide dark mode theme toggle with schedule options"
+            st.session_state.prd_brief_text = "System-wide dark mode theme toggle with schedule options"
             
         feature_idea = st.text_area(
             "Feature Description Brief:", 
-            value=preset_prompt if preset_prompt else "",
+            value=st.session_state.prd_brief_text,
             height=160,
             placeholder="e.g., An automated email digest sent every Monday summarizing team task progress..."
         )
+        st.session_state.prd_brief_text = feature_idea
         
         generate_btn = st.button("🚀 Generate PRD Specification")
 
     with col_output:
         st.markdown("### 2. Generated Specification")
+        
         if generate_btn:
             cleaned_input = feature_idea.strip()
             if len(cleaned_input) >= 3:
                 with st.spinner("✨ Gemini AI analyzing requirements and drafting PRD..."):
-                    raw_prd = ai_engine.generate_prd(cleaned_input)
-                st.write_stream(stream_text_with_cursor(raw_prd))
+                    st.session_state.raw_prd = ai_engine.generate_prd(cleaned_input)
+                    st.session_state.show_prd_approval = True
             else:
                 st.toast("Please enter a feature description briefly first.", icon="⚠️")
-        else:
-            st.info("👈 Enter a feature brief on the left or select a quick preset to generate the document.")
+                
+        if st.session_state.get("show_prd_approval"):
+            st.info("💡 **AI Proposes, People Decide:** Review the rendered PRD below or expand the edit box to customize it.")
+            
+            # Formatted clean Markdown render
+            st.markdown(st.session_state.raw_prd)
+            
+            # Collapsible edit box for human review
+            with st.expander("✏️ Edit PRD Draft (Human Review & Override)", expanded=False):
+                edited_prd = st.text_area("Modify PRD Content:", value=st.session_state.raw_prd, height=300)
+                if st.button("💾 Save Edits"):
+                    st.session_state.raw_prd = edited_prd
+                    st.success("Edits saved!")
+                    st.rerun()
 
-# MODULE 2: RICE CALCULATOR (ENTERPRISE DASHBOARD)
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("✅ Approve & Add to Backlog"):
+                st.success("PRD Approved! Synced to backlog with evidence attached.")
+                st.balloons()
+                st.session_state.show_prd_approval = False
+
+# MODULE 2: RICE CALCULATOR
 elif app_mode == "RICE":
     st.subheader("📊 RICE Prioritization & Risk Assessment Engine")
     st.caption("Quantify feature ROI, evaluate strategic trade-offs, and receive AI-backed execution guidance.")
@@ -164,37 +176,14 @@ elif app_mode == "RICE":
     with col_inputs:
         st.markdown("### 1. Matrix Inputs")
         feature_name = st.text_input("Feature Title", "AI Automated Invoice Scanner")
-        
-        reach = st.number_input(
-            "Reach (Users impacted / quarter)", 
-            min_value=0, value=5000, step=500,
-            help="Total unique users expected to use this feature."
-        )
-        
+        reach = st.number_input("Reach (Users impacted / quarter)", min_value=0, value=5000, step=500)
         impact = st.select_slider(
             "Impact Scale Factor", 
             options=[0.25, 0.5, 1.0, 2.0, 3.0], value=2.0, 
-            format_func=lambda x: {
-                0.25: "0.25 (Minimal)", 
-                0.5: "0.5 (Low)", 
-                1.0: "1.0 (Medium)", 
-                2.0: "2.0 (High)", 
-                3.0: "3.0 (Massive)"
-            }[x],
-            help="How much this feature will improve conversion or retention for each user."
+            format_func=lambda x: {0.25: "0.25 (Minimal)", 0.5: "0.5 (Low)", 1.0: "1.0 (Medium)", 2.0: "2.0 (High)", 3.0: "3.0 (Massive)"}[x]
         )
-        
-        confidence = st.slider(
-            "Confidence Rating (%)", 
-            min_value=10, max_value=100, value=80, step=10,
-            help="High = backed by user research; Low = pure intuition."
-        )
-        
-        effort = st.number_input(
-            "Effort (Person-Months)", 
-            min_value=0.5, value=1.5, step=0.5,
-            help="Total engineer/designer months required to ship."
-        )
+        confidence = st.slider("Confidence Rating (%)", min_value=10, max_value=100, value=80, step=10)
+        effort = st.number_input("Effort (Person-Months)", min_value=0.5, value=1.5, step=0.5)
         
         compute_btn = st.button("📊 Calculate Score & Run AI Diagnostics")
 
@@ -202,51 +191,42 @@ elif app_mode == "RICE":
         st.markdown("### 2. Strategic Diagnostics & Score")
         
         if compute_btn:
-            # 1. Compute Numerical Score
             raw_score = ai_engine.calculate_rice_score(reach, impact, confidence, effort)
             
-            # 2. Display KPI Cards Side-by-Side
             kpi_col1, kpi_col2 = st.columns(2)
             with kpi_col1:
                 st.metric(label="RICE Score", value=f"{raw_score:,.1f}")
             with kpi_col2:
                 if raw_score >= 2000:
                     st.markdown("### Status: 🔥 **P0 Priority**")
-                    st.caption("Immediate Roadmap Candidate")
                 elif raw_score >= 800:
                     st.markdown("### Status: ⚡ **P1 Priority**")
-                    st.caption("Secondary Release Cycle")
                 else:
                     st.markdown("### Status: 🧊 **P2 Priority**")
-                    st.caption("Low Return / High Cost")
 
-            # 3. Mathematical Formula Visual Breakdown
             st.markdown("---")
             st.markdown("#### 📐 Mathematical Breakdown")
             st.latex(r"\text{RICE Score} = \frac{\text{Reach} \times \text{Impact} \times \text{Confidence}}{\text{Effort}}")
-            st.code(
-                f"({reach:,} Reach  ×  {impact}x Impact  ×  {confidence}% Confidence)  /  {effort} Person-Months  =  {raw_score:,.1f}", 
-                language="text"
-            )
+            st.code(f"({reach:,} Reach  ×  {impact}x Impact  ×  {confidence}% Confidence)  /  {effort} Person-Months  =  {raw_score:,.1f}", language="text")
 
-            # 4. Value vs. Cost Bar Telemetry
             st.markdown("#### ⚡ Value vs. Cost Balance")
             total_value = reach * impact * (confidence / 100)
-            st.write(f"**Value Multiplier:** {total_value:,.0f} points")
             st.progress(min(int((total_value / 10000) * 100), 100))
-            
-            st.write(f"**Resource Cost (Effort):** {effort} months")
             st.progress(min(int((effort / 10) * 100), 100))
 
-            # 5. AI Strategic Interpretation
             st.markdown("---")
             st.markdown("#### 🤖 AI Strategic Interpretation")
             with st.spinner("✨ Gemini AI evaluating feature tradeoffs..."):
                 explanation = ai_engine.explain_rice_score(feature_name, reach, impact, confidence, effort, raw_score)
             st.write_stream(stream_text_with_cursor(explanation))
             
+            st.markdown("---")
+            st.markdown("#### 👤 PM Decision Record")
+            pm_notes = st.text_input("Add your justification or override notes here:")
+            if st.button("🔒 Lock Score & Approve"):
+                st.success(f"Score of {raw_score:,.1f} locked by Product Manager. Added to Roadmap.")
         else:
-            st.info("👈 Set your metrics on the left and click **'Calculate Score & Run AI Diagnostics'** to view the full prioritization matrix.")
+            st.info("👈 Set your metrics on the left and click **'Calculate Score & Run AI Diagnostics'**")
 
 # MODULE 3: CUSTOMER FEEDBACK HUB
 elif app_mode == "FEEDBACK":
@@ -258,17 +238,50 @@ elif app_mode == "FEEDBACK":
     with col_f_in:
         st.markdown("### 1. Raw Feedback Stream")
         
+        if "feedback_input_text" not in st.session_state:
+            st.session_state.feedback_input_text = ""
+            
         if st.button("📋 Load Sample Customer Reviews Dataset"):
-            sample_data = "1. App crashes whenever I try to export reports to PDF.\n2. We desperately need dark mode, my eyes hurt at night.\n3. The pricing is too high for small teams.\n4. Love the new dashboard layout! Super clean.\n5. PDF export is broken on iOS devices."
-        else:
-            sample_data = ""
+            st.session_state.feedback_input_text = "\n".join([
+                "1. App crashes on PDF export.",
+                "2. Need dark mode ASAP.",
+                "3. Too expensive for small teams.",
+                "4. PDF export broken on iOS devices.",
+                "5. Love the UI! Super clean design.",
+                "6. Can't reset password from login screen.",
+                "7. Add Google SSO please.",
+                "8. Exporting reports freezes my phone.",
+                "9. Great customer support team.",
+                "10. Dark mode would save my eyes at night.",
+                "11. Billing page is confusing.",
+                "12. Cannot download PDF summaries.",
+                "13. Fast and responsive web app.",
+                "14. Add Apple sign-in option.",
+                "15. PDF generation fails with error 500.",
+                "16. Dashboard is too bright at night.",
+                "17. The new layout is amazing.",
+                "18. I keep getting logged out randomly.",
+                "19. Why does PDF export take 5 minutes?",
+                "20. Need SSO integration for enterprise.",
+                "21. Invoice scanner works perfectly.",
+                "22. Please implement a dark theme.",
+                "23. App hangs on the reports page.",
+                "24. PDF export button does nothing.",
+                "25. Very clean and intuitive interface.",
+                "26. Wish there was a black background option.",
+                "27. Microsoft login integration needed.",
+                "28. Reports export is completely broken.",
+                "29. Fast loading times across pages.",
+                "30. Dark mode is standard now, please add it!"
+            ])
             
         feedback_input = st.text_area(
             "Paste Raw Reviews / Survey Text:", 
-            value=sample_data if sample_data else "",
+            value=st.session_state.feedback_input_text,
             height=200, 
             placeholder="Paste 5 to 50 raw customer reviews..."
         )
+        st.session_state.feedback_input_text = feedback_input
         
         sum_btn = st.button("🔍 Extract Sentiment & Action Items")
 
