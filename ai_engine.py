@@ -1,13 +1,16 @@
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
-# Load API key
+# 1. Load API key from .env file
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 
-if api_key:
-    genai.configure(api_key=api_key)
+if not api_key:
+    print("WARNING: API Key not found. Please check your .env file.")
+
+# 2. Initialize Gemini Client
+client = genai.Client(api_key=api_key)
 
 def generate_prd(feature_idea):
     """Takes a simple feature idea and returns a structured PRD."""
@@ -25,8 +28,10 @@ def generate_prd(feature_idea):
     ## 5. Technical Requirements
     """
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-3.5-flash-lite',
+            contents=prompt,
+        )
         return response.text
     except Exception as e:
         return f"Error connecting to AI: {e}"
@@ -45,8 +50,10 @@ def summarize_feedback(feedback_text):
     ## 3. Recommended PM Action
     """
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-3.5-flash-lite',
+            contents=prompt,
+        )
         return response.text
     except Exception as e:
         return f"Error connecting to AI: {e}"
@@ -74,8 +81,10 @@ def explain_rice_score(feature_name, reach, impact, confidence, effort, score):
     (Suggest 1 practical way to lower effort or increase confidence)
     """
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-3.5-flash-lite',
+            contents=prompt,
+        )
         return response.text
     except Exception as e:
         return f"Error connecting to AI: {e}"
